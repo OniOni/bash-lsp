@@ -39,7 +39,6 @@ impl Request {
                     ret += line;
                 },
                 [] => {
-                    let stderr = io::stderr();
                     err_msg(format!("Empty."));
                 }
             };
