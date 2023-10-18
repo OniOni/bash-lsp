@@ -1,86 +1,25 @@
-use std::collections::HashMap;
 use std::io::{self, Read, Write};
-use serde_json::json;
 use std::str::FromStr;
 
 use std::thread;
 
-fn write(stderr: &io::Stderr, mut message: String) -> io::Result<()> {
-    let mut handle = stderr.lock();
-    message.push_str("\n");
-    handle.write_all(message.as_ref());
-    handle.flush();
+use crate::jsonrpc::Request;
+use crate::utils::err_msg;
+use crate::lsp::get_response;
 
-    Ok(())
-}
-
-struct Response {
-    headers: HashMap<String, String>,
-    body: String,
-}
-
-#[derive(PartialEq)]
-#[derive(Debug)]
-struct Request {
-    headers: HashMap<String, String>,
-    body: String,
-}
-
-impl Request {
-
-    fn new() -> Self {
-        Self {
-            headers: HashMap::new(),
-            body: String::new(),
-        }
-    }
-
-    fn process_headers(&mut self, buffer: &String) -> String {
-        let mut ret = String::new();
-        for line in buffer.split("\r\n") {
-            let v = line.split(": ").collect::<Vec<_>>();
-            match v[..] {
-                [key, value] => {
-                    self.headers.insert(key.to_string(), value.to_string());
-                },
-                [value] => {
-                    ret += value;
-                },
-                [..] => {
-                    ret += line;
-                },
-                [] => {
-                    let stderr = io::stderr();
-                    write(&stderr, format!("Empty."));
-                }
-            };
-        }
-        return ret;
-    }
-}
-
-fn get_response(req: Request) -> String {
-    let body = json!({
-        "id": 1,
-        "result": {
-            "all": "good"
-        }
-    }).to_string();
-    let len = body.len();
-
-    return format!("Content-Length: {len}\r\n\r\n{body}")
-}
+pub mod jsonrpc;
+pub mod utils;
+pub mod lsp;
 
 fn main() {
     let mut stdin = io::stdin();
-    let stderr = io::stderr();
 
     let mut read_buff = [0; 256];
     let mut no_bytes = true;
     let mut buffer = String::new();
     let mut request = Request::new();
 
-    write(&stderr, String::from("Starting loop"));
+    err_msg(String::from("Starting loop"));
     loop {
         match stdin.read(&mut read_buff) {
             Ok(n) => {
@@ -124,12 +63,12 @@ fn main() {
 
                     read_buff = [0; 256];
                 } else {
-                    write(&stderr, String::from("error: nothing to read"));
+                    err_msg(String::from("error: nothing to read"));
                     break;
                 }
             }
             Err(error) => {
-                write(&stderr, String::from("error: {error}"));
+                err_msg(String::from("error: {error}"));
                 break;
             }
         }
