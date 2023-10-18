@@ -3,6 +3,8 @@ use std::io::{self, Read, Write};
 use serde_json::json;
 use std::str::FromStr;
 
+use std::thread;
+
 fn write(stderr: &io::Stderr, mut message: String) -> io::Result<()> {
     let mut handle = stderr.lock();
     message.push_str("\n");
@@ -72,7 +74,6 @@ fn get_response(req: Request) -> String {
 fn main() {
     let mut stdin = io::stdin();
     let stderr = io::stderr();
-    let stdout = io::stdout();
 
     let mut read_buff = [0; 256];
     let mut no_bytes = true;
@@ -105,11 +106,15 @@ fn main() {
                     }
 
                     if request.body.len() > 0 {
-                        let resp = get_response(request);
-                        let mut handle = stdout.lock();
 
-                        handle.write_all(resp.as_ref());
-                        handle.flush();
+                        thread::spawn(|| {
+                            let stdout = io::stdout();
+                            let mut handle = stdout.lock();
+                            let resp = get_response(request);
+
+                            handle.write_all(resp.as_ref());
+                            handle.flush();
+                        });
                         request = Request::new();
                     }
 
