@@ -27,9 +27,14 @@ def main():
 
     client = LSPClient(p.stdin, p.stdout)
     resp = client.call(
-        method="test",
+        method="initialize",
         args={
-            "hello": "world"
+            "processId": None,
+            "clientInfo": {
+                "name": "lsp-test-client",
+                "version": "1.0",
+            },
+            "capabilities": {},
         }
     )
 

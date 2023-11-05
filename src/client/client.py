@@ -12,9 +12,7 @@ class LSPClient:
     def call(self, method: str, args: dict[str, Any]):
         msg = self._conn.send(LSPRequest(
             body=JsonRpcRequest(
-                method="test", params={
-                    "test": True
-                }
+                method=method, params=args,
             )
         ))
         self.stdin.write(msg)
